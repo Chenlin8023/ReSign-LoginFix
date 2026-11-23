@@ -1,0 +1,37 @@
+name: build-macos13
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-13
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Theos
+        uses: waruhachi/theos-action@v2.6.3
+        with:
+          theos-src: "waruhachi/theos"
+          theos-branch: "main"
+          sdks-src: "waruhachi/sdks"
+          sdks-branch: "main"
+
+      - name: Build
+        shell: bash
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/out"
+          cd tweak
+          make clean FINALPACKAGE=1 >/dev/null 2>&1 || true
+          make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless ARCHS="arm64 arm64e"
+          cp -v packages/*.deb "$GITHUB_WORKSPACE/out/" || true
+          ls -l "$GITHUB_WORKSPACE/out"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: resignpatch-deb-macos13
+          path: out/*.deb
+          if-no-files-found: error
