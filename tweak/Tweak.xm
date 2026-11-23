@@ -10,6 +10,13 @@
 #import <Foundation/Foundation.h>
 #import <objc/runtime.h>
 #import <objc/message.h>
+#include <unistd.h>
+
+// AuthKit 的私有类：这里只是给编译器一个"形状"，运行时按名字查找，不链接该框架
+@interface AKAppleIDSessionProxy : NSObject
+- (instancetype)initWithIdentifier:(NSString *)identifier;
+- (NSDictionary *)appleIDHeadersForRequest:(id)request;
+@end
 
 static NSString *const kLogPath = @"/var/mobile/Documents/ReSignPatch.log";
 
@@ -43,9 +50,9 @@ static void RPLog(NSString *fmt, ...) {
 static NSDictionary *RPRealAuthHeaders(id request) {
     Class cls = objc_getClass("AKAppleIDSession");
     if (!cls) return nil;
-    id session = [[cls alloc] initWithIdentifier:@"com.apple.gs.xcode.auth"];
+    id session = [(AKAppleIDSessionProxy *)[cls alloc] initWithIdentifier:@"com.apple.gs.xcode.auth"];
     if (![session respondsToSelector:@selector(appleIDHeadersForRequest:)]) return nil;
-    return [session performSelector:@selector(appleIDHeadersForRequest:) withObject:request];
+    return [session appleIDHeadersForRequest:request];
 }
 
 %hook RPVAuthentication
