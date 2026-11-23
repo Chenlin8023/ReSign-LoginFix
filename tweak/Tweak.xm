@@ -1,4 +1,4 @@
-// Tweak.xm v0.1.3 —— 核心修复：让客户端身份与 OTP 的来源一致
+// Tweak.xm v0.1.5 —— 核心修复：让客户端身份与 OTP 的来源一致
 //
 // 病因链（已用日志证实）：
 //   X-Apple-I-MD（一次性口令）来自本机 akd → 退出登录后重新配对，口令是"本机"的；
@@ -23,10 +23,7 @@ static IMP g_origAnisette = NULL;
 static IMP g_origAppleHeaders = NULL;
 static IMP g_origDefaultHeaders = NULL;
 
-@interface AKAppleIDSessionProxy : NSObject
-- (instancetype)initWithIdentifier:(NSString *)identifier;
-- (NSDictionary *)appleIDHeadersForRequest:(id)request;
-@end
+
 
 static void RPLog(NSString *fmt, ...) {
     va_list ap;
@@ -86,21 +83,6 @@ static NSString *RPDeviceClientInfo(void) {
 
 
 // 借本机 AuthKit 的头（用于对比诊断）
-static NSDictionary *RPRealAuthHeaders(void) {
-    Class cls = objc_getClass("AKAppleIDSession");
-    if (!cls) return nil;
-    @try {
-        id url = [objc_getClass("NSURL") URLWithString:@"https://gsa.apple.com/grandslam/GsService2"];
-        id req = [objc_getClass("NSMutableURLRequest") requestWithURL:url];
-        [(NSMutableURLRequest *)req setHTTPMethod:@"POST"];
-        id session = [(AKAppleIDSessionProxy *)[cls alloc] initWithIdentifier:@"com.apple.gs.xcode.auth"];
-        if (![session respondsToSelector:@selector(appleIDHeadersForRequest:)]) return nil;
-        return [session appleIDHeadersForRequest:req];
-    } @catch (NSException *e) {
-        RPLog(@"AuthKit 借头异常: %@", e);
-        return nil;
-    }
-}
 
 static void RPLogDict(NSString *tag, NSDictionary *d) {
     if (!d) { RPLog(@"%@: (nil)", tag); return; }
@@ -164,8 +146,7 @@ static id my_appleHeaders(id self, SEL _cmd, id request) {
     @try {
         RPLog(@"---- appleIDHeadersForRequest（登录用到了它）----");
         RPLogDict(@"  原始", ret);
-        NSDictionary *authkit = RPRealAuthHeaders();
-        RPLogDict(@"  AuthKit 原生", authkit);
+
         if ([ret isKindOfClass:[NSMutableDictionary class]]) {
             NSMutableDictionary *h = (NSMutableDictionary *)ret;
             NSString *device = RPDeviceClientInfo();
@@ -212,7 +193,7 @@ static void hookMethod(Class c, const char *selName, IMP *origOut, IMP newImp, c
 
 __attribute__((constructor)) static void ReSignPatchInit(void) {
     @autoreleasepool {
-        RPLog(@"════ ReSignPatch v0.1.3 已载入 (pid=%d) ════", getpid());
+        RPLog(@"════ ReSignPatch v0.1.5 已载入 (pid=%d) ════", getpid());
         NSOperatingSystemVersion vNow = [[NSProcessInfo processInfo] operatingSystemVersion];
         RPLog(@"本机机型 = %@, 系统版本 = %ld.%ld",
               RPDeviceModel(), (long)vNow.majorVersion, (long)vNow.minorVersion);
