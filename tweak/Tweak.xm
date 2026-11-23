@@ -213,9 +213,9 @@ static void hookMethod(Class c, const char *selName, IMP *origOut, IMP newImp, c
 __attribute__((constructor)) static void ReSignPatchInit(void) {
     @autoreleasepool {
         RPLog(@"════ ReSignPatch v0.1.3 已载入 (pid=%d) ════", getpid());
-        RPLog(@"本机机型 = %@, 系统版本 = %@",
-              RPDeviceModel(),
-              [[NSProcessInfo processInfo] operatingSystemVersion]);
+        NSOperatingSystemVersion vNow = [[NSProcessInfo processInfo] operatingSystemVersion];
+        RPLog(@"本机机型 = %@, 系统版本 = %ld.%ld",
+              RPDeviceModel(), (long)vNow.majorVersion, (long)vNow.minorVersion);
         RPLog(@"将使用的 client-info = %@", RPDeviceClientInfo());
 
         Class login = objc_getClass("RPVLoginImpl");
