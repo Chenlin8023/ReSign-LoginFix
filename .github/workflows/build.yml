@@ -1,0 +1,51 @@
+name: build-deb
+
+# 在 GitHub 的 macOS 云服务器上编译，本地不需要任何工具链。
+# 触发方式：Actions 页面 → build-deb → Run workflow
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - name: 取回仓库代码
+        uses: actions/checkout@v4
+
+      - name: 安装打包工具
+        run: |
+          brew install dpkg ldid xz
+          echo "工具就绪"
+
+      - name: 安装 theos（编译 iOS 插件的框架）
+        run: |
+          git clone --recursive --depth 1 https://github.com/theos/theos.git "$RUNNER_TEMP/theos"
+          echo "THEOS=$RUNNER_TEMP/theos" >> "$GITHUB_ENV"
+          echo "$RUNNER_TEMP/theos/bin" >> "$GITHUB_PATH"
+
+      - name: 编译（rootless 版：装到 /var/jb）
+        working-directory: theos
+        run: |
+          make clean || true
+          make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless ARCHS="arm64 arm64e"
+          mkdir -p "$GITHUB_WORKSPACE/out"
+          cp packages/*.deb "$GITHUB_WORKSPACE/out/" 2>/dev/null || true
+          ls -l "$GITHUB_WORKSPACE/out"
+
+      - name: 编译（rootful 版：装到 /Library）
+        working-directory: theos
+        run: |
+          make clean || true
+          make package FINALPACKAGE=1 ARCHS="arm64 arm64e"
+          cp packages/*.deb "$GITHUB_WORKSPACE/out/" 2>/dev/null || true
+          ls -l "$GITHUB_WORKSPACE/out"
+
+      - name: 上传编译结果
+        uses: actions/upload-artifact@v4
+        with:
+          name: resignpatch-deb
+          path: out/*.deb
+          if-no-files-found: error

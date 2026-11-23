@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  说明：tweak 注入进 App 后**继承宿主进程的 entitlements**，所以本文件不是必需的。
+  它的用途是：如果将来把登录逻辑做成独立 .deb 里的 helper（不注入 App），
+  这个 helper 就需要下面这些权限。内容取自 jp.soh.reprovisions 1.1.164 的真实签名
+  （我从 deb 里的 CodeDirectory 解出来的，见 repro-c/docs 里的分析）。
+-->
+<plist version="1.0">
+<dict>
+	<!-- 私有 AuthKit：AKAppleIDSession 生成 X-Apple-I-MD 的前提 -->
+	<key>com.apple.authkit.client.private</key>
+	<true/>
+
+	<!-- 读取 Apple 账号（altDSID 等） -->
+	<key>com.apple.private.accounts.allaccounts</key>
+	<true/>
+
+	<!-- 以系统身份运行（装到 /Applications 的 App / root helper 需要） -->
+	<key>platform-application</key>
+	<true/>
+	<key>com.apple.private.security.no-container</key>
+	<true/>
+	<key>com.apple.private.security.storage.AppBundles</key>
+	<true/>
+	<key>com.apple.private.security.storage.AppDataContainers</key>
+	<true/>
+	<key>com.apple.private.skip-library-validation</key>
+	<true/>
+
+	<!-- installd SPI：装 IPA / 装描述文件 -->
+	<key>com.apple.private.mobileinstall.allowedSPI</key>
+	<array>
+		<string>Lookup</string>
+		<string>Install</string>
+		<string>Browse</string>
+		<string>Uninstall</string>
+		<string>InstallLocalProvisioned</string>
+	</array>
+	<key>com.apple.private.MobileContainerManager.allowed</key>
+	<true/>
+	<key>com.apple.managedconfiguration.profiled-access</key>
+	<true/>
+
+	<!-- 设备标识（anisette 的 X-Mme-Device-Id 需要） -->
+	<key>com.apple.private.MobileGestalt.AllowedProtectedKeys</key>
+	<array>
+		<string>UniqueDeviceID</string>
+		<string>UniqueChipID</string>
+		<string>SerialNumber</string>
+	</array>
+
+	<!-- keychain：沿用原插件的 group，方便直接读到已缓存的账号 -->
+	<key>keychain-access-groups</key>
+	<array>
+		<string>AAAAAAAAAA.jp.soh.reprovision.ios</string>
+	</array>
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.jp.soh.reprovision.ios</string>
+	</array>
+</dict>
+</plist>
