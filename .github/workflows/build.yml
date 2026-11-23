@@ -1,49 +1,49 @@
 name: build-deb
 
-# 在 GitHub 的 macOS 云服务器上编译，本地不需要任何工具链。
-# 触发方式：Actions 页面 → build-deb → Run workflow
+# 云端编译 ReSign 登录修复补丁（无需本地工具链）
+# 触发：Actions → build-deb → Run workflow
+
+permissions:
+  contents: read
 
 on:
   workflow_dispatch:
-  push:
-    branches: [ main, master ]
 
 jobs:
   build:
-    runs-on: macos-14
+    runs-on: macos-latest
     steps:
-      - name: 取回仓库代码
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: 安装打包工具
-        run: |
-          brew install dpkg ldid xz
-          echo "工具就绪"
+      - name: Set up Theos
+        uses: waruhachi/theos-action@v2.6.3
+        with:
+          theos-src: "waruhachi/theos"
+          theos-branch: "main"
+          sdks-src: "waruhachi/sdks"
+          sdks-branch: "main"
 
-      - name: 安装 theos（编译 iOS 插件的框架）
+      - name: Build rootless + rootful
+        shell: bash
         run: |
-          git clone --recursive --depth 1 https://github.com/theos/theos.git "$RUNNER_TEMP/theos"
-          echo "THEOS=$RUNNER_TEMP/theos" >> "$GITHUB_ENV"
-          echo "$RUNNER_TEMP/theos/bin" >> "$GITHUB_PATH"
-
-      - name: 编译（rootless 版：装到 /var/jb）
-        working-directory: theos
-        run: |
-          make clean || true
-          make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless ARCHS="arm64 arm64e"
+          set -e
           mkdir -p "$GITHUB_WORKSPACE/out"
-          cp packages/*.deb "$GITHUB_WORKSPACE/out/" 2>/dev/null || true
-          ls -l "$GITHUB_WORKSPACE/out"
+          cd theos
 
-      - name: 编译（rootful 版：装到 /Library）
-        working-directory: theos
-        run: |
-          make clean || true
+          # 先做 rootless（装到 /var/jb，越狱设备常用）
+          make clean FINALPACKAGE=1 >/dev/null 2>&1 || true
+          make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless ARCHS="arm64 arm64e"
+          cp -v packages/*.deb "$GITHUB_WORKSPACE/out/" 2>/dev/null || true
+
+          # 再做 rootful
+          make clean FINALPACKAGE=1 >/dev/null 2>&1 || true
           make package FINALPACKAGE=1 ARCHS="arm64 arm64e"
-          cp packages/*.deb "$GITHUB_WORKSPACE/out/" 2>/dev/null || true
+          cp -v packages/*.deb "$GITHUB_WORKSPACE/out/" 2>/dev/null || true
+
           ls -l "$GITHUB_WORKSPACE/out"
 
-      - name: 上传编译结果
+      - name: Upload deb
         uses: actions/upload-artifact@v4
         with:
           name: resignpatch-deb
