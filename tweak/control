@@ -1,8 +1,8 @@
 Package: jp.soh.resignpatch
 Name: ReSign 登录修复（阶段一）
-Version: 0.1.2
+Version: 0.1.3
 Architecture: iphoneos-arm64e
-Description: 无 CydiaSubstrate 依赖（用 ObjC runtime 手动 swizzle），RootHide/roothide 可加载。修正 ReSign 登录时客户端身份不一致（X-MMe-Client-Info、User-Agent），并写 /var/mobile/Documents/ReSignPatch.log。
+Description: 挂钩登录实际路径（loginWithUsername/_anisetteData/makeRequest），在源头修正 X-MMe-Client-Info，并全面记录登录报文到 /var/mobile/Documents/ReSignPatch.log。
 Depends: firmware (>= 15.0)
 Section: Tweaks
 Priority: optional
