@@ -1,6 +1,6 @@
 Package: jp.soh.resignpatch
 Name: ReSign 登录修复（阶段一）
-Version: 0.1.4
+Version: 0.1.5
 Architecture: iphoneos-arm64e
 Description: 修正 ReSign 登录时客户端身份不一致的两处问题（X-MMe-Client-Info 被写成 2019 年 Mac 串、User-Agent 过旧），并把登录请求头写入 /var/mobile/Documents/ReSignPatch.log 便于诊断。
 Depends: firmware (>= 15.0)
