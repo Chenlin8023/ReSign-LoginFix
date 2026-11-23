@@ -1,0 +1,34 @@
+name: build-linux
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 theos（Linux 版，自带工具链和 SDK）
+        uses: Randomblock1/theos-action@main
+        with:
+          theos-dir: ${{ github.workspace }}/theos
+
+      - name: 编译
+        working-directory: tweak
+        shell: bash
+        run: |
+          set -x
+          make clean FINALPACKAGE=1 >/dev/null 2>&1 || true
+          make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless ARCHS="arm64 arm64e"
+          ls -l packages
+
+      - name: 上传 deb
+        uses: actions/upload-artifact@v4
+        with:
+          name: resignpatch-deb-linux
+          path: tweak/packages/*.deb
+          if-no-files-found: error
