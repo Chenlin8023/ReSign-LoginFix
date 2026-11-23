@@ -83,9 +83,7 @@ static NSString *RPDeviceClientInfo(void) {
             RPDeviceModel(), (long)v.majorVersion, (long)v.minorVersion, RPOSBuild()];
 }
 
-static NSString *RPOldClientInfo(void) {
-    return @"<MacBookPro11,5> <Mac OS X;10.14.6;18G103> <com.apple.AuthKit/1 (com.apple.akd/1.0)>";
-}
+
 
 // 借本机 AuthKit 的头（用于对比诊断）
 static NSDictionary *RPRealAuthHeaders(void) {
